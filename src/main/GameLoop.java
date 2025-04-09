@@ -9,6 +9,7 @@ import entities.Conveyor;
 import entities.DNACombiner;
 import entities.Entity;
 import entities.Extractor;
+import entities.LifeformAssembler;
 import utils.Direction;
 
 import java.util.ArrayList;
@@ -37,26 +38,27 @@ public class GameLoop extends AnimationTimer {
 	public GameLoop(GraphicsContext gc) {
 		this.gc = gc;
 
-		// Initial test setup: one extractor and conveyors
-//        entities.add(new Extractor(4, 5, Direction.RIGHT));
-//        for (int i = 5; i <= 8; i++) {
-//            entities.add(new Conveyor(i, 5, Direction.RIGHT));
-//        }
+		// Place manual traits for testing
+		testItems[10][6] = new Item(Item.ItemType.TRAIT, "BLOOD", "#ff6666");
+		testItems[10][8] = new Item(Item.ItemType.TRAIT, "MUSCLE", "#66cc66");
 
-		// Top extractor (pointing down)
+		// Top extractor pointing down (feeds into y=6)
 	    entities.add(new Extractor(6, 5, Direction.DOWN));
 	    entities.add(new Conveyor(6, 6, Direction.DOWN));
 
-	    // Bottom extractor (pointing up)
+	    // Bottom extractor pointing up (feeds into y=8)
 	    entities.add(new Extractor(6, 9, Direction.UP));
 	    entities.add(new Conveyor(6, 8, Direction.UP));
 
-	    // Combiner in the middle, facing down
-	    entities.add(new DNACombiner(6, 7, Direction.DOWN));
+	    // Combiner at (6, 7), input from top & bottom, output to right
+	    entities.add(new DNACombiner(6, 7, Direction.RIGHT));
 
-	    // Output belt (trait moves down)
-	    entities.add(new Conveyor(6, 10, Direction.DOWN));
+	    // Output belt to right
+	    entities.add(new Conveyor(7, 7, Direction.RIGHT));
 
+	    // Lifeform assembler — producing HUMAN from BLOOD + MUSCLE
+	    entities.add(new LifeformAssembler(10, 7, Direction.RIGHT));
+	    entities.add(new Conveyor(11, 7, Direction.RIGHT));
 	}
 
 	@Override
@@ -95,7 +97,7 @@ public class GameLoop extends AnimationTimer {
 			e.render(gc, TILE_SIZE);
 		}
 
-		// Draw items (nucleotides)
+		// Draw items (nucleotides, traits, lifeforms)
 		for (int x = 0; x < GRID_WIDTH; x++) {
 			for (int y = 0; y < GRID_HEIGHT; y++) {
 				Item item = testItems[x][y];
@@ -116,8 +118,8 @@ public class GameLoop extends AnimationTimer {
 	// Placement logic (called on click)
 	public void placeAt(int x, int y) {
 		switch (buildMode) {
-		case CONVEYOR -> entities.add(new Conveyor(x, y, currentDirection));
-		case EXTRACTOR -> entities.add(new Extractor(x, y, currentDirection));
+			case CONVEYOR -> entities.add(new Conveyor(x, y, currentDirection));
+			case EXTRACTOR -> entities.add(new Extractor(x, y, currentDirection));
 		}
 	}
 
