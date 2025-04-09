@@ -24,19 +24,18 @@ public class Conveyor extends Entity {
 
 	@Override
 	public void render(GraphicsContext gc, int tileSize) {
-	    gc.setFill(Color.GRAY);
-	    gc.fillRect(x * tileSize + 8, y * tileSize + 8, tileSize - 16, tileSize - 16);
+		gc.setFill(Color.GRAY);
+		gc.fillRect(x * tileSize + 8, y * tileSize + 8, tileSize - 16, tileSize - 16);
 
-	    gc.setFill(Color.BLACK);
-	    String arrow = switch (direction) {
-	        case UP -> "↑";
-	        case RIGHT -> "→";
-	        case DOWN -> "↓";
-	        case LEFT -> "←";
-	    };
-	    gc.fillText(arrow, x * tileSize + tileSize / 2 - 5, y * tileSize + tileSize / 2 + 5);
+		gc.setFill(Color.BLACK);
+		String arrow = switch (direction) {
+		case UP -> "↑";
+		case RIGHT -> "→";
+		case DOWN -> "↓";
+		case LEFT -> "←";
+		};
+		gc.fillText(arrow, x * tileSize + tileSize / 2 - 5, y * tileSize + tileSize / 2 + 5);
 	}
-
 
 	private boolean inBounds(Item[][] grid, int x, int y) {
 		return x >= 0 && y >= 0 && x < grid.length && y < grid[0].length;

@@ -3,21 +3,24 @@ package main;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import logic.GoalManager;
 import items.Item;
 import items.NucleotideFactory;
 import entities.Conveyor;
 import entities.DNACombiner;
+import entities.DeliveryZone;
 import entities.Entity;
 import entities.Extractor;
 import entities.LifeformAssembler;
 import utils.Direction;
+import grid.Tile;
 
 import java.util.ArrayList;
 
 public class GameLoop extends AnimationTimer {
 
 	private enum BuildMode {
-		CONVEYOR, EXTRACTOR
+		CONVEYOR, EXTRACTOR, DNA_COMBINER, LIFEFORM_ASSEMBLER, DELETE
 	}
 
 	private BuildMode buildMode = BuildMode.CONVEYOR;
@@ -31,6 +34,8 @@ public class GameLoop extends AnimationTimer {
 	private GraphicsContext gc;
 	private ArrayList<Entity> entities = new ArrayList<>();
 
+	private Tile[][] tileMap = new Tile[GRID_WIDTH][GRID_HEIGHT];
+
 	// Mouse position for ghost preview
 	private int mouseX = -1;
 	private int mouseY = -1;
@@ -38,27 +43,22 @@ public class GameLoop extends AnimationTimer {
 	public GameLoop(GraphicsContext gc) {
 		this.gc = gc;
 
-		// Place manual traits for testing
-		testItems[10][6] = new Item(Item.ItemType.TRAIT, "BLOOD", "#ff6666");
-		testItems[10][8] = new Item(Item.ItemType.TRAIT, "MUSCLE", "#66cc66");
+		// === Initialize tile map ===
+		for (int x = 0; x < GRID_WIDTH; x++) {
+			for (int y = 0; y < GRID_HEIGHT; y++) {
+				tileMap[x][y] = new Tile(x, y);
+			}
+		}
 
-		// Top extractor pointing down (feeds into y=6)
-	    entities.add(new Extractor(6, 5, Direction.DOWN));
-	    entities.add(new Conveyor(6, 6, Direction.DOWN));
+		// === Place some resource tiles ===
+		tileMap[4][4].setResource("A");
+		tileMap[6][4].setResource("T");
+		tileMap[4][6].setResource("G");
+		tileMap[6][6].setResource("C");
 
-	    // Bottom extractor pointing up (feeds into y=8)
-	    entities.add(new Extractor(6, 9, Direction.UP));
-	    entities.add(new Conveyor(6, 8, Direction.UP));
+		// === Add goal delivery hub ===
+		entities.add(new DeliveryZone(16, 7));
 
-	    // Combiner at (6, 7), input from top & bottom, output to right
-	    entities.add(new DNACombiner(6, 7, Direction.RIGHT));
-
-	    // Output belt to right
-	    entities.add(new Conveyor(7, 7, Direction.RIGHT));
-
-	    // Lifeform assembler — producing HUMAN from BLOOD + MUSCLE
-	    entities.add(new LifeformAssembler(10, 7, Direction.RIGHT));
-	    entities.add(new Conveyor(11, 7, Direction.RIGHT));
 	}
 
 	@Override
@@ -76,6 +76,18 @@ public class GameLoop extends AnimationTimer {
 	private void render() {
 		gc.clearRect(0, 0, 1280, 720);
 
+		// === Draw resource tiles (background + letter) ===
+		for (int x = 0; x < GRID_WIDTH; x++) {
+			for (int y = 0; y < GRID_HEIGHT; y++) {
+				if (tileMap[x][y].isResource()) {
+					gc.setFill(Color.BEIGE);
+					gc.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+					gc.setFill(Color.DARKBLUE);
+					gc.fillText(tileMap[x][y].getResource(), x * TILE_SIZE + 10, y * TILE_SIZE + 20);
+				}
+			}
+		}
+
 		// Draw grid
 		for (int x = 0; x < GRID_WIDTH; x++) {
 			for (int y = 0; y < GRID_HEIGHT; y++) {
@@ -89,6 +101,23 @@ public class GameLoop extends AnimationTimer {
 			gc.setGlobalAlpha(0.5);
 			gc.setFill(Color.LIGHTBLUE);
 			gc.fillRect(mouseX * TILE_SIZE, mouseY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+
+			// Preview icon based on build mode and direction
+			String preview = switch (buildMode) {
+			case CONVEYOR -> switch (currentDirection) {
+			case UP -> "↑";
+			case RIGHT -> "→";
+			case DOWN -> "↓";
+			case LEFT -> "←";
+			};
+			case EXTRACTOR -> "E";
+			case DNA_COMBINER -> "⚗";
+			case LIFEFORM_ASSEMBLER -> "🧬";
+			case DELETE -> "❌";
+			};
+
+			gc.setFill(Color.BLACK);
+			gc.fillText(preview, mouseX * TILE_SIZE + 10, mouseY * TILE_SIZE + 20);
 			gc.setGlobalAlpha(1.0);
 		}
 
@@ -107,6 +136,17 @@ public class GameLoop extends AnimationTimer {
 				}
 			}
 		}
+
+		GoalManager gm = GoalManager.getInstance();
+		gc.setFill(Color.BLACK);
+		gc.fillText("Goal: " + gm.getTargetLifeform() + " " + gm.getDelivered() + "/" + gm.getGoalAmount(), 20, 20);
+
+		gc.setFill(Color.DARKGRAY);
+		gc.fillText("Current Tool: " + getBuildModeLabel(), 20, 40);
+		gc.fillText("Direction: " + getDirectionLabel() + " (Press R to rotate)", 20, 60);
+		gc.fillText("Click to place", 20, 80);
+		gc.fillText("C : Conveyor, E : Extractor, D : DNA Combiner, L : Lifeform Combiner, X : Delete", 20, 100);
+
 	}
 
 	// Mouse movement tracking (called from Main.java)
@@ -117,9 +157,32 @@ public class GameLoop extends AnimationTimer {
 
 	// Placement logic (called on click)
 	public void placeAt(int x, int y) {
+		if (x < 0 || y < 0 || x >= GRID_WIDTH || y >= GRID_HEIGHT)
+			return;
+
 		switch (buildMode) {
-			case CONVEYOR -> entities.add(new Conveyor(x, y, currentDirection));
-			case EXTRACTOR -> entities.add(new Extractor(x, y, currentDirection));
+		case CONVEYOR -> entities.add(new Conveyor(x, y, currentDirection));
+
+		case EXTRACTOR -> {
+			Tile tile = tileMap[x][y];
+			if (tile.isResource()) {
+				String code = tile.getResource();
+				entities.add(new Extractor(x, y, currentDirection, code));
+				System.out.println("Placed extractor for " + code + " at (" + x + "," + y + ")");
+			} else {
+				System.out.println("Cannot place extractor — not a resource tile!");
+			}
+		}
+
+		case DNA_COMBINER -> entities.add(new DNACombiner(x, y, currentDirection));
+
+		case LIFEFORM_ASSEMBLER -> entities.add(new LifeformAssembler(x, y, currentDirection));
+
+		case DELETE -> {
+			entities.removeIf(e -> e.getX() == x && e.getY() == y && !(e instanceof entities.DeliveryZone));
+			System.out.println("Removed entity at (" + x + "," + y + ")");
+		}
+
 		}
 	}
 
@@ -137,4 +200,39 @@ public class GameLoop extends AnimationTimer {
 		buildMode = BuildMode.CONVEYOR;
 		System.out.println("Build Mode: Conveyor");
 	}
+
+	public void setBuildModeDNACombiner() {
+		buildMode = BuildMode.DNA_COMBINER;
+		System.out.println("Build Mode: DNA Combiner");
+	}
+
+	public void setBuildModeLifeformAssembler() {
+		buildMode = BuildMode.LIFEFORM_ASSEMBLER;
+		System.out.println("Build Mode: Lifeform Assembler");
+	}
+
+	private String getBuildModeLabel() {
+		return switch (buildMode) {
+		case EXTRACTOR -> "Extractor (E)";
+		case CONVEYOR -> "Conveyor (C)";
+		case DNA_COMBINER -> "DNA Combiner (D)";
+		case LIFEFORM_ASSEMBLER -> "Lifeform Assembler (L)";
+		case DELETE -> "Delete (X)";
+		};
+	}
+
+	private String getDirectionLabel() {
+		return switch (currentDirection) {
+		case UP -> "↑ UP";
+		case RIGHT -> "→ RIGHT";
+		case DOWN -> "↓ DOWN";
+		case LEFT -> "← LEFT";
+		};
+	}
+
+	public void setBuildModeDelete() {
+		buildMode = BuildMode.DELETE;
+		System.out.println("Build Mode: Delete");
+	}
+
 }
