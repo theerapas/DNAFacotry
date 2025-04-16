@@ -2,14 +2,18 @@ package entities;
 
 import items.Item;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import logic.GoalManager;
 import utils.Direction;
 
 public class DeliveryZone extends Entity {
-
+	
+	private Image image;
+	
 	public DeliveryZone(int x, int y) {
 		super(x, y, Direction.UP); // direction unused
+		image = new Image(ClassLoader.getSystemResourceAsStream("assets/delivery.png"));
 	}
 
 	@Override
@@ -23,9 +27,12 @@ public class DeliveryZone extends Entity {
 
 	@Override
 	public void render(GraphicsContext gc, int tileSize) {
-		gc.setFill(Color.GOLD);
-		gc.fillRoundRect(x * tileSize + 2, y * tileSize + 2, tileSize - 4, tileSize - 4, 10, 10);
-		gc.setFill(Color.BLACK);
-		gc.fillText("🎯", x * tileSize + tileSize / 2 - 5, y * tileSize + tileSize / 2 + 5);
+		gc.drawImage(image, x * tileSize, y * tileSize, tileSize, tileSize);
 	}
+	
+	@Override
+	public boolean canAcceptItemFrom(Direction fromDirection) {
+	    return true; // Accept lifeforms from any direction
+	}
+
 }

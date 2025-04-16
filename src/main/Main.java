@@ -9,19 +9,17 @@ import javafx.stage.Stage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.KeyEvent;
+import static main.Config.*;
+
 
 public class Main extends Application {
-
-	private static final int WIDTH = 1280;
-	private static final int HEIGHT = 720;
-	private static final int TILE_SIZE = 32;
 
 	private GameLoop gameLoop;
 
 	@Override
 	public void start(Stage stage) {
 		Pane root = new Pane();
-		Canvas canvas = new Canvas(WIDTH, HEIGHT);
+		Canvas canvas = new Canvas(SCREEN_WIDTH, SCREEN_HEIGHT);
 		GraphicsContext gc = canvas.getGraphicsContext2D();
 		root.getChildren().add(canvas);
 
@@ -54,6 +52,7 @@ public class Main extends Application {
 			case D -> gameLoop.setBuildModeDNACombiner();
 			case L -> gameLoop.setBuildModeLifeformAssembler();
 			case X -> gameLoop.setBuildModeDelete();
+			case T -> gameLoop.setBuildModeTunnel();
 			}
 		});
 

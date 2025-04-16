@@ -17,11 +17,21 @@ public abstract class Entity {
 
 	public abstract void render(javafx.scene.canvas.GraphicsContext gc, int tileSize);
 
-	public int getX() {
+	public int getX() {	
 		return x;
 	}
 
 	public int getY() {
 		return y;
 	}
+	
+	public boolean canAcceptItemFrom(Direction fromDirection) {
+		return false;
+	}
+	
+	public Direction getDirection() {
+	    return direction;
+	}
+
+
 }

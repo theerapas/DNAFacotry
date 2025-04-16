@@ -2,6 +2,7 @@ package main;
 
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import logic.GoalManager;
 import items.Item;
@@ -12,53 +13,58 @@ import entities.DeliveryZone;
 import entities.Entity;
 import entities.Extractor;
 import entities.LifeformAssembler;
+import entities.Tunnel;
+import entities.TunnelEnd;
 import utils.Direction;
+import utils.Game;
 import grid.Tile;
+import java.util.HashMap;
+import java.util.Map;
 
 import java.util.ArrayList;
+
+import static main.Config.*;
 
 public class GameLoop extends AnimationTimer {
 
 	private enum BuildMode {
-		CONVEYOR, EXTRACTOR, DNA_COMBINER, LIFEFORM_ASSEMBLER, DELETE
+		CONVEYOR, EXTRACTOR, DNA_COMBINER, LIFEFORM_ASSEMBLER, TUNNEL, DELETE
 	}
 
 	private BuildMode buildMode = BuildMode.CONVEYOR;
 	private Direction currentDirection = Direction.RIGHT;
 
-	private static final int TILE_SIZE = 32;
-	private static final int GRID_WIDTH = 20;
-	private static final int GRID_HEIGHT = 15;
-
 	private Item[][] testItems = new Item[GRID_WIDTH][GRID_HEIGHT];
 	private GraphicsContext gc;
 	private ArrayList<Entity> entities = new ArrayList<>();
+	private ArrayList<Entity> overlayEntities = new ArrayList<>();
 
 	private Tile[][] tileMap = new Tile[GRID_WIDTH][GRID_HEIGHT];
 
-	// Mouse position for ghost preview
+	private final Map<String, Image> itemImageCache = new HashMap<>();
+	private final Map<String, Image> resourceImageCache = new HashMap<>();
+
+	private Tunnel pendingTunnelStart = null;
+
 	private int mouseX = -1;
 	private int mouseY = -1;
 
 	public GameLoop(GraphicsContext gc) {
 		this.gc = gc;
+		Game.instance = this;
 
-		// === Initialize tile map ===
 		for (int x = 0; x < GRID_WIDTH; x++) {
 			for (int y = 0; y < GRID_HEIGHT; y++) {
 				tileMap[x][y] = new Tile(x, y);
 			}
 		}
 
-		// === Place some resource tiles ===
 		tileMap[4][4].setResource("A");
 		tileMap[6][4].setResource("T");
 		tileMap[4][6].setResource("G");
 		tileMap[6][6].setResource("C");
 
-		// === Add goal delivery hub ===
 		entities.add(new DeliveryZone(16, 7));
-
 	}
 
 	@Override
@@ -71,24 +77,29 @@ public class GameLoop extends AnimationTimer {
 		for (Entity e : entities) {
 			e.update(testItems);
 		}
+		for (Entity e : overlayEntities) {
+			e.update(testItems);
+		}
 	}
 
 	private void render() {
-		gc.clearRect(0, 0, 1280, 720);
+		gc.setFill(Color.WHITE);
+		gc.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-		// === Draw resource tiles (background + letter) ===
 		for (int x = 0; x < GRID_WIDTH; x++) {
 			for (int y = 0; y < GRID_HEIGHT; y++) {
 				if (tileMap[x][y].isResource()) {
-					gc.setFill(Color.BEIGE);
-					gc.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-					gc.setFill(Color.DARKBLUE);
-					gc.fillText(tileMap[x][y].getResource(), x * TILE_SIZE + 10, y * TILE_SIZE + 20);
+					String code = tileMap[x][y].getResource();
+					String key = "resource_" + code.toLowerCase();
+					if (!resourceImageCache.containsKey(key)) {
+						Image img = new Image(ClassLoader.getSystemResourceAsStream("assets/" + key + ".png"));
+						resourceImageCache.put(key, img);
+					}
+					gc.drawImage(resourceImageCache.get(key), x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
 				}
 			}
 		}
 
-		// Draw grid
 		for (int x = 0; x < GRID_WIDTH; x++) {
 			for (int y = 0; y < GRID_HEIGHT; y++) {
 				gc.setStroke(Color.LIGHTGRAY);
@@ -96,24 +107,23 @@ public class GameLoop extends AnimationTimer {
 			}
 		}
 
-		// Draw ghost preview
 		if (mouseX >= 0 && mouseY >= 0 && mouseX < GRID_WIDTH && mouseY < GRID_HEIGHT) {
 			gc.setGlobalAlpha(0.5);
 			gc.setFill(Color.LIGHTBLUE);
 			gc.fillRect(mouseX * TILE_SIZE, mouseY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
 
-			// Preview icon based on build mode and direction
 			String preview = switch (buildMode) {
-			case CONVEYOR -> switch (currentDirection) {
-			case UP -> "↑";
-			case RIGHT -> "→";
-			case DOWN -> "↓";
-			case LEFT -> "←";
-			};
-			case EXTRACTOR -> "E";
-			case DNA_COMBINER -> "⚗";
-			case LIFEFORM_ASSEMBLER -> "🧬";
-			case DELETE -> "❌";
+				case CONVEYOR -> switch (currentDirection) {
+					case UP -> "↑";
+					case RIGHT -> "→";
+					case DOWN -> "↓";
+					case LEFT -> "←";
+				};
+				case EXTRACTOR -> "E";
+				case DNA_COMBINER -> "⚗";
+				case LIFEFORM_ASSEMBLER -> "🧬";
+				case TUNNEL -> "T";
+				case DELETE -> "❌";
 			};
 
 			gc.setFill(Color.BLACK);
@@ -121,18 +131,25 @@ public class GameLoop extends AnimationTimer {
 			gc.setGlobalAlpha(1.0);
 		}
 
-		// Draw entities
 		for (Entity e : entities) {
 			e.render(gc, TILE_SIZE);
 		}
+		for (Entity e : overlayEntities) {
+			e.render(gc, TILE_SIZE);
+		}
 
-		// Draw items (nucleotides, traits, lifeforms)
 		for (int x = 0; x < GRID_WIDTH; x++) {
 			for (int y = 0; y < GRID_HEIGHT; y++) {
 				Item item = testItems[x][y];
 				if (item != null) {
-					gc.setFill(Color.web(item.getColor()));
-					gc.fillText(item.getDnaCode(), x * TILE_SIZE + 10, y * TILE_SIZE + 20);
+					Image icon = getItemImage(item);
+					int padding = 8;
+					gc.drawImage(icon,
+						x * TILE_SIZE + padding,
+						y * TILE_SIZE + padding,
+						TILE_SIZE - 2 * padding,
+						TILE_SIZE - 2 * padding
+					);
 				}
 			}
 		}
@@ -145,8 +162,8 @@ public class GameLoop extends AnimationTimer {
 		gc.fillText("Current Tool: " + getBuildModeLabel(), 20, 40);
 		gc.fillText("Direction: " + getDirectionLabel() + " (Press R to rotate)", 20, 60);
 		gc.fillText("Click to place", 20, 80);
-		gc.fillText("C : Conveyor, E : Extractor, D : DNA Combiner, L : Lifeform Combiner, X : Delete", 20, 100);
-
+		gc.fillText("C : Conveyor, E : Extractor, D : DNA Combiner, L : Lifeform Combiner,T : Tunnel, X : Delete", 20,
+				100);
 	}
 
 	// Mouse movement tracking (called from Main.java)
@@ -161,25 +178,87 @@ public class GameLoop extends AnimationTimer {
 			return;
 
 		switch (buildMode) {
-		case CONVEYOR -> entities.add(new Conveyor(x, y, currentDirection));
+		case CONVEYOR -> {
+			var conveyor = new Conveyor(x, y, currentDirection);
+			if (!canPlaceEntityAt(x, y, conveyor))
+				return;
+			entities.add(conveyor);
+		}
 
 		case EXTRACTOR -> {
 			Tile tile = tileMap[x][y];
 			if (tile.isResource()) {
 				String code = tile.getResource();
-				entities.add(new Extractor(x, y, currentDirection, code));
+				var extractor = new Extractor(x, y, currentDirection, code);
+				if (!canPlaceEntityAt(x, y, extractor))
+					return;
+				entities.add(extractor);
 				System.out.println("Placed extractor for " + code + " at (" + x + "," + y + ")");
 			} else {
 				System.out.println("Cannot place extractor — not a resource tile!");
 			}
 		}
 
-		case DNA_COMBINER -> entities.add(new DNACombiner(x, y, currentDirection));
+		case DNA_COMBINER -> {
+			var combiner = new DNACombiner(x, y, currentDirection);
+			if (!canPlaceEntityAt(x, y, combiner))
+				return;
+			entities.add(combiner);
+		}
 
-		case LIFEFORM_ASSEMBLER -> entities.add(new LifeformAssembler(x, y, currentDirection));
+		case LIFEFORM_ASSEMBLER -> {
+			var assembler = new LifeformAssembler(x, y, currentDirection);
+			if (!canPlaceEntityAt(x, y, assembler))
+				return;
+			entities.add(assembler);
+		}
+
+		case TUNNEL -> {
+			if (pendingTunnelStart == null) {
+				// Step 1: Place entrance
+				var tunnel = new Tunnel(x, y, currentDirection, -1, -1);
+				if (!canPlaceEntityAt(x, y, tunnel)) return;
+
+				pendingTunnelStart = tunnel;
+				overlayEntities.add(tunnel); // Tunnel on overlay
+				entities.add(new Conveyor(x, y, currentDirection)); // Conveyor on base
+				System.out.println("Tunnel start placed at (" + x + "," + y + ")");
+			} else {
+				// Step 2: Place exit
+				var tunnelEnd = new TunnelEnd(x, y, currentDirection);
+				if (!canPlaceEntityAt(x, y, tunnelEnd)) return;
+
+				pendingTunnelStart.setExit(x, y);
+				overlayEntities.add(tunnelEnd); // Tunnel end on overlay
+				entities.add(new Conveyor(x, y, currentDirection)); // Conveyor on base
+				System.out.println("Tunnel exit placed at (" + x + "," + y + ")");
+				pendingTunnelStart = null;
+			}
+		}
 
 		case DELETE -> {
-			entities.removeIf(e -> e.getX() == x && e.getY() == y && !(e instanceof entities.DeliveryZone));
+			// Remove overlay entities (like Tunnel/TunnelEnd)
+			overlayEntities.removeIf(e -> {
+				if (e.getX() == x && e.getY() == y) {
+					if (e instanceof TunnelEnd) {
+						// Clear the exit from any tunnel that points here
+						for (Entity base : overlayEntities) {
+							if (base instanceof Tunnel tunnel) {
+								tunnel.clearExitIfMatches(x, y);
+							}
+						}
+					}
+					return true;
+				}
+				return false;
+			});
+
+			// Remove base entities (except DeliveryZone)
+			entities.removeIf(e -> e.getX() == x && e.getY() == y && !(e instanceof DeliveryZone));
+
+			// Clear any item on tile too
+			testItems[x][y] = null;
+
 			System.out.println("Removed entity at (" + x + "," + y + ")");
 		}
 
@@ -217,6 +296,7 @@ public class GameLoop extends AnimationTimer {
 		case CONVEYOR -> "Conveyor (C)";
 		case DNA_COMBINER -> "DNA Combiner (D)";
 		case LIFEFORM_ASSEMBLER -> "Lifeform Assembler (L)";
+		case TUNNEL -> "Tunnel (T)";
 		case DELETE -> "Delete (X)";
 		};
 	}
@@ -229,10 +309,83 @@ public class GameLoop extends AnimationTimer {
 		case LEFT -> "← LEFT";
 		};
 	}
+	
+	public Entity getEntityAt(int x, int y) {
+		for (Entity e : entities) {
+			if (e.getX() == x && e.getY() == y)
+				return e;
+		}
+		for (Entity e : overlayEntities) {
+			if (e.getX() == x && e.getY() == y)
+				return e;
+		}
+		return null;
+	}
+
 
 	public void setBuildModeDelete() {
 		buildMode = BuildMode.DELETE;
 		System.out.println("Build Mode: Delete");
+	}
+
+	public void setBuildModeTunnel() {
+		buildMode = BuildMode.TUNNEL;
+		System.out.println("Build Mode: Tunnel");
+	}
+
+	private Image getItemImage(Item item) {
+		String name = switch (item.getType()) {
+		case NUCLEOTIDE -> "nucleotide_" + item.getDnaCode().toLowerCase();
+		case TRAIT -> "trait_" + item.getDnaCode().toLowerCase();
+		case LIFEFORM -> "lifeform_" + item.getDnaCode().toLowerCase();
+		};
+
+		// Use cached image if already loaded
+		if (!itemImageCache.containsKey(name)) {
+			Image img = new Image(ClassLoader.getSystemResourceAsStream("assets/" + name + ".png"));
+			itemImageCache.put(name, img);
+		}
+		return itemImageCache.get(name);
+	}
+
+	private boolean canPlaceEntityAt(int x, int y, Entity newEntity) {
+		// Check tile bounds
+		if (x < 0 || y < 0 || x >= GRID_WIDTH || y >= GRID_HEIGHT)
+			return false;
+
+		// Check delivery zone
+		for (Entity e : entities) {
+			if (e instanceof DeliveryZone && e.getX() == x && e.getY() == y)
+				return false;
+		}
+
+		// Only extractor can be placed on resource tile
+		if (tileMap[x][y].isResource() && !(newEntity instanceof Extractor))
+			return false;
+
+		// Check in entities
+		for (Entity e : entities) {
+			if (e.getX() == x && e.getY() == y) {
+				boolean tunnelBeltCombo = ((e instanceof Conveyor
+						&& (newEntity instanceof Tunnel || newEntity instanceof TunnelEnd))
+						|| ((e instanceof Tunnel || e instanceof TunnelEnd) && newEntity instanceof Conveyor));
+				if (!tunnelBeltCombo)
+					return false;
+			}
+		}
+
+		// Check in overlayEntities
+		for (Entity e : overlayEntities) {
+			if (e.getX() == x && e.getY() == y) {
+				boolean tunnelBeltCombo = ((e instanceof Conveyor
+						&& (newEntity instanceof Tunnel || newEntity instanceof TunnelEnd))
+						|| ((e instanceof Tunnel || e instanceof TunnelEnd) && newEntity instanceof Conveyor));
+				if (!tunnelBeltCombo)
+					return false;
+			}
+		}
+
+		return true;
 	}
 
 }

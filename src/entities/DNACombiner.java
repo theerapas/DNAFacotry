@@ -3,13 +3,18 @@ package entities;
 import items.Item;
 import items.TraitCombiner;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import utils.Direction;
+import utils.Game;
 
 public class DNACombiner extends Entity {
 
+	private Image image;
+
 	public DNACombiner(int x, int y, Direction direction) {
 		super(x, y, direction);
+		image = new Image(ClassLoader.getSystemResourceAsStream("assets/dna_combiner.png"));
 	}
 
 	@Override
@@ -29,8 +34,15 @@ public class DNACombiner extends Entity {
 		Item in2 = itemGrid[input2X][input2Y];
 
 		if (in1 != null && in2 != null) {
+			if (itemGrid[outputX][outputY] != null)
+				return;
+
+			Entity outputEntity = Game.instance.getEntityAt(outputX, outputY);
+			if (outputEntity == null || !outputEntity.canAcceptItemFrom(direction))
+				return;
+
 			Item combined = TraitCombiner.tryCombine(in1, in2);
-			if (combined != null && itemGrid[outputX][outputY] == null) {
+			if (combined != null) {
 				itemGrid[outputX][outputY] = combined;
 				itemGrid[input1X][input1Y] = null;
 				itemGrid[input2X][input2Y] = null;
@@ -40,10 +52,7 @@ public class DNACombiner extends Entity {
 
 	@Override
 	public void render(GraphicsContext gc, int tileSize) {
-		gc.setFill(Color.DARKVIOLET);
-		gc.fillRoundRect(x * tileSize + 4, y * tileSize + 4, tileSize - 8, tileSize - 8, 8, 8);
-		gc.setStroke(Color.WHITE);
-		gc.strokeText("⚗", x * tileSize + tileSize / 2 - 5, y * tileSize + tileSize / 2 + 5);
+		gc.drawImage(image, x * tileSize, y * tileSize, tileSize, tileSize);
 	}
 
 	private boolean inBounds(Item[][] grid, int x, int y) {

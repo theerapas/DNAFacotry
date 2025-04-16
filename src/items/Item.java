@@ -1,5 +1,7 @@
 package items;
 
+import javafx.scene.image.Image;
+
 public class Item {
 	public enum ItemType {
 		NUCLEOTIDE, TRAIT, LIFEFORM
@@ -7,12 +9,12 @@ public class Item {
 
 	private ItemType type;
 	private String dnaCode; // "A", "AT", "BRAINMUSCLE", "HUMAN"
-	private String color;
+	private Image image;
 
-	public Item(ItemType type, String dnaCode, String color) {
+	public Item(ItemType type, String dnaCode, Image image) {
 		this.type = type;
 		this.dnaCode = dnaCode;
-		this.color = color;
+		this.image = image;
 	}
 
 	public ItemType getType() {
@@ -23,8 +25,8 @@ public class Item {
 		return dnaCode;
 	}
 
-	public String getColor() {
-		return color;
+	public Image getImage() {
+		return image;
 	}
 
 	@Override

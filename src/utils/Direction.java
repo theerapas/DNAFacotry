@@ -18,4 +18,14 @@ public enum Direction {
 	public Direction rotateCounterClockwise() {
 		return values()[(this.ordinal() + 3) % values().length];
 	}
+	
+	public Direction opposite() {
+		return switch (this) {
+			case UP -> DOWN;
+			case DOWN -> UP;
+			case LEFT -> RIGHT;
+			case RIGHT -> LEFT;
+		};
+	}
+
 }
