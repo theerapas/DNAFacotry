@@ -1,0 +1,78 @@
+.root-pane {
+    -fx-background-color: linear-gradient(to bottom, #e0e0e0, #f8f8f8);
+}
+
+.label-title {
+    -fx-font-size: 48px;
+    -fx-text-fill: #2f4f2f;
+    -fx-font-weight: bold;
+}
+
+.start-button {
+    -fx-background-color: linear-gradient(to bottom, #7FB77E, #6AAE6A);
+}
+
+.start-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #88C88A, #6AAE6A);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 10, 0, 0, 4);
+}
+
+.root-pane {
+    -fx-background-color: linear-gradient(to bottom, #e0e0e0, #f8f8f8);
+}
+
+.label-title {
+    -fx-font-size: 32px;
+    -fx-text-fill: #2f4f2f;
+    -fx-font-weight: bold;
+}
+
+.button {
+    -fx-font-size: 20px; 
+    -fx-padding: 12px 28px;
+    -fx-background-radius: 12;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 6, 0, 0, 2);
+}
+
+.button-restart {
+    -fx-background-color: linear-gradient(to bottom, #7FB77E, #6AAE6A);
+}
+
+.button-restart:hover {
+    -fx-background-color: linear-gradient(to bottom, #88C88A, #6AAE6A);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 10, 0, 0, 4);
+}
+
+.button-menu {
+    -fx-background-color: linear-gradient(to bottom, #A3C9A8, #8EBF96);
+}
+
+.button-menu:hover {
+    -fx-background-color: linear-gradient(to bottom, #B2DBB2, #8EBF96);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 10, 0, 0, 4);
+}
+
+.button-exit {
+    -fx-background-color: linear-gradient(to bottom, #e57373, #d32f2f);
+}
+
+.button-exit:hover {
+    -fx-background-color: linear-gradient(to bottom, #f06262, #c62828);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 10, 0, 0, 4);
+}
+
+.toolbar-icon-button {
+    -fx-background-color: transparent;
+    -fx-padding: 4;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+
+.toolbar-icon-button:hover {
+    -fx-background-color: rgba(0,0,0,0.05);
+    -fx-border-color: #888;
+}

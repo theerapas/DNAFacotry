@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane fx:id="rootPane" styleClass="root-pane"
+           xmlns="http://javafx.com/javafx/23.0.1"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="ui.EndPageController"
+           prefHeight="720.0" prefWidth="1280.0">
+
+    <Canvas fx:id="particleCanvas" width="1280" height="720" />
+
+    <VBox alignment="CENTER" spacing="30.0" fx:id="rootVBox">
+        <Label text="🎉 Thanks for Playing DNA Factory! 🎉" styleClass="label-title"/>
+
+        <Button fx:id="restartButton" text="🔁 Restart Game"
+                styleClass="button-restart" onAction="#handleRestart">
+            <cursor><Cursor fx:constant="HAND" /></cursor>
+        </Button>
+
+        <Button fx:id="menuButton" text="🔙 Back to Menu"
+                styleClass="button-menu" onAction="#handleBackToMenu">
+            <cursor><Cursor fx:constant="HAND" /></cursor>
+        </Button>
+
+        <Button fx:id="exitButton" text="❌ Exit Game"
+                styleClass="button-exit" onAction="#handleExit">
+            <cursor><Cursor fx:constant="HAND" /></cursor>
+        </Button>
+    </VBox>
+</StackPane>
+
+

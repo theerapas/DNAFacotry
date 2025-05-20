@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
+
+<StackPane fx:id="rootPane" styleClass="root-pane"
+  prefHeight="720.0" prefWidth="1280.0"
+  xmlns="http://javafx.com/javafx/23.0.1"
+  xmlns:fx="http://javafx.com/fxml/1"
+  fx:controller="ui.StartPageController">
+
+  <Canvas fx:id="particleCanvas" height="720" width="1280" />
+
+  <VBox fx:id="rootVBox" alignment="CENTER" spacing="30.0">
+    <children>
+      <Label text="DNA FACTORY" styleClass="label-title"/>
+      <Button fx:id="startButton" onAction="#handleStart" text="▶ Start Game" styleClass="start-button">
+        <cursor>
+          <Cursor fx:constant="HAND" />
+        </cursor>
+      </Button>
+    </children>
+  </VBox>
+</StackPane>
+

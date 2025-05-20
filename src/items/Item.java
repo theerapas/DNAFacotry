@@ -1,20 +1,18 @@
 package items;
 
-import javafx.scene.image.Image;
-
 public class Item {
 	public enum ItemType {
-		NUCLEOTIDE, TRAIT, LIFEFORM
+		NUCLEOTIDE, TRAIT, LIFEFORM, PROTEIN, ORGAN
 	}
 
 	private ItemType type;
 	private String dnaCode; // "A", "AT", "BRAINMUSCLE", "HUMAN"
-	private Image image;
+	private double progress; // 0.0 - 1.0
 
-	public Item(ItemType type, String dnaCode, Image image) {
+	public Item(ItemType type, String dnaCode) {
 		this.type = type;
 		this.dnaCode = dnaCode;
-		this.image = image;
+		this.progress = 0.0;
 	}
 
 	public ItemType getType() {
@@ -25,12 +23,25 @@ public class Item {
 		return dnaCode;
 	}
 
-	public Image getImage() {
-		return image;
-	}
-
 	@Override
 	public String toString() {
 		return dnaCode;
 	}
+	
+	public void setProgress(double progress) {
+		if(progress < 0.0) {
+			this.progress = 0.0;
+			return;
+		}
+		if(progress > 1.0) {
+			this.progress = 1.0;
+			return;
+		}
+		this.progress = progress;
+	}
+	
+	public double getProgress() {
+		return progress;
+	}
+
 }

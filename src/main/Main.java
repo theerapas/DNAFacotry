@@ -1,61 +1,49 @@
 package main;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.KeyEvent;
-import static main.Config.*;
+import javafx.util.Duration;
+import utils.Config;
 
+import java.io.IOException;
 
 public class Main extends Application {
 
-	private GameLoop gameLoop;
+	private static final int WIDTH = Config.SCREEN_WIDTH;
+	private static final int HEIGHT = Config.SCREEN_WIDTH;
+	private static final int FRAME_INTERVAL_MS = 1000 / 60;
 
 	@Override
 	public void start(Stage stage) {
-		Pane root = new Pane();
-		Canvas canvas = new Canvas(SCREEN_WIDTH, SCREEN_HEIGHT);
-		GraphicsContext gc = canvas.getGraphicsContext2D();
-		root.getChildren().add(canvas);
+		try {
+			Parent root = FXMLLoader.load(getClass().getResource("/ui/StartPage.fxml"));
+			Scene scene = new Scene(root, Config.SCREEN_WIDTH, Config.SCREEN_HEIGHT); // start screen size
+			stage.setScene(scene);
+			stage.setTitle("DNA Factory");
 
-		Scene scene = new Scene(root);
-		stage.setScene(scene);
-		stage.setTitle("DNA Factory");
-		stage.show();
+			// Frame rate limiter for the menu
+			Timeline timeline = new Timeline(new KeyFrame(Duration.millis(FRAME_INTERVAL_MS), event -> {
+				// Update logic for the menu (if any)
+			}));
+			timeline.setCycleCount(Timeline.INDEFINITE);
+			timeline.play();
 
-		gameLoop = new GameLoop(gc);
-		gameLoop.start();
+			stage.setOnCloseRequest(event -> {
+				// Handle window close event
+				if (SimulationThread.getInstance() != null) {
+					SimulationThread.getInstance().stop();
+				}
+			});
 
-		// Handle mouse click to place an entity
-		scene.setOnMouseClicked((MouseEvent e) -> {
-			int gridX = (int) (e.getX() / TILE_SIZE);
-			int gridY = (int) (e.getY() / TILE_SIZE);
-			gameLoop.placeAt(gridX, gridY);
-		});
-
-		// Handle mouse movement to update ghost preview
-		scene.setOnMouseMoved(e -> {
-			gameLoop.updateMousePosition(e.getX(), e.getY());
-		});
-
-		// Handle key press to change build mode or rotate
-		scene.setOnKeyPressed(e -> {
-			switch (e.getCode()) {
-			case R -> gameLoop.rotate();
-			case E -> gameLoop.setBuildModeExtractor();
-			case C -> gameLoop.setBuildModeConveyor();
-			case D -> gameLoop.setBuildModeDNACombiner();
-			case L -> gameLoop.setBuildModeLifeformAssembler();
-			case X -> gameLoop.setBuildModeDelete();
-			case T -> gameLoop.setBuildModeTunnel();
-			}
-		});
-
+			stage.show();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static void main(String[] args) {

@@ -3,14 +3,12 @@ package entities;
 import items.Item;
 import items.NucleotideFactory;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.image.Image;
-import javafx.scene.paint.Color;
+import utils.AssetManager;
 import utils.Direction;
 import utils.Game;
+import utils.ItemMover;
 
 public class Extractor extends Entity {
-	
-	private Image image;
 
 	private int tickCounter = 0;
 	private int spawnInterval = 60; // every 60 ticks
@@ -19,38 +17,56 @@ public class Extractor extends Entity {
 	public Extractor(int x, int y, Direction direction, String nucleotideType) {
 		super(x, y, direction);
 		this.nucleotideType = nucleotideType;
-		
-		String fileName = "extractor_" + nucleotideType.toLowerCase() + ".png";
-		
-		image = new Image(ClassLoader.getSystemResourceAsStream("assets/" + fileName));
 	}
 
 	@Override
-	public void update(Item[][] itemGrid) {
+	public void update(Item[][] itemGrid, ItemMover mover) {
 		tickCounter++;
-		if (tickCounter < spawnInterval) return;
+		if (tickCounter < spawnInterval)
+			return;
 		tickCounter = 0;
-
 		int tx = x + direction.dx;
 		int ty = y + direction.dy;
 
-		// Check bounds + if target tile is empty
-		if (!inBounds(itemGrid, tx, ty) || itemGrid[tx][ty] != null)
+		// Check bounds
+		if (!inBounds(itemGrid, tx, ty)) {
 			return;
-
-		// Check if there is an entity AND it can accept
+		}
+		// Don’t spawn if tile is already occupied
+		if (itemGrid[tx][ty] != null) {
+			return;
+		}
+		// Check if the entity at (tx, ty) is valid receiver
 		Entity target = Game.instance.getEntityAt(tx, ty);
-		if (target == null || !target.canAcceptItemFrom(direction))
+		if (target == null || !target.getDirection().equals(direction)) {
 			return;
-
-		// Finally spawn the item
-		itemGrid[tx][ty] = NucleotideFactory.getNucleotide(nucleotideType);
+		}
+		// Spawn a new nucleotide via mover system
+		mover.trySpawn(x, y, tx, ty, NucleotideFactory.getNucleotide(nucleotideType));
 	}
-
 
 	@Override
 	public void render(GraphicsContext gc, int tileSize) {
-		gc.drawImage(image, x * tileSize, y * tileSize, tileSize, tileSize);
+		double centerX = x * tileSize + tileSize / 2.0;
+		double centerY = y * tileSize + tileSize / 2.0;
+		double angle = switch (direction) {
+		case RIGHT -> 0;
+		case DOWN -> 90;
+		case LEFT -> 180;
+		case UP -> 270;
+		};
+
+		gc.save();
+		gc.translate(centerX, centerY); // Move pivot to center of tile
+		gc.rotate(angle); // Rotate around the center
+		switch (nucleotideType) {
+		case "A" -> gc.drawImage(AssetManager.extractorA, -tileSize / 2.0, -tileSize / 2.0, tileSize, tileSize);
+		case "T" -> gc.drawImage(AssetManager.extractorT, -tileSize / 2.0, -tileSize / 2.0, tileSize, tileSize);
+		case "G" -> gc.drawImage(AssetManager.extractorG, -tileSize / 2.0, -tileSize / 2.0, tileSize, tileSize);
+		case "C" -> gc.drawImage(AssetManager.extractorC, -tileSize / 2.0, -tileSize / 2.0, tileSize, tileSize);
+		}
+
+		gc.restore();
 	}
 
 	private boolean inBounds(Item[][] grid, int x, int y) {

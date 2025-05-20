@@ -1,7 +1,15 @@
 package grid;
 
+import java.util.ArrayList;
+
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
+import utils.AssetManager;
+import utils.Camera;
+
 public class Tile {
 	private int x, y;
+	private static final int TILE_SIZE = 32;
 
 	public enum Type {
 		EMPTY, RESOURCE
@@ -38,5 +46,22 @@ public class Tile {
 
 	public Type getType() {
 		return type;
+	}
+
+	public static int getTileSize() {
+		return TILE_SIZE;
+	}
+
+	public void drawTile(GraphicsContext gc) {
+		if (this.isResource()) {
+			switch (getResource()) {
+			case "A" -> gc.drawImage(AssetManager.resourceA, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+			case "T" -> gc.drawImage(AssetManager.resourceT, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+			case "G" -> gc.drawImage(AssetManager.resourceG, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+			case "C" -> gc.drawImage(AssetManager.resourceC, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+			}
+
+		}
+
 	}
 }
