@@ -1,5 +1,3 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/jYOfPNqO)
-
 # 🧬 DNA Factory – Build Life, One Gene at a Time
 
 **DNA Factory** is a grid-based factory automation game developed in Java with JavaFX. Step into the shoes of a rogue scientist and construct lifeforms from scratch using the basic units of biology—nucleotides. Extract raw materials, process gene sequences, synthesize proteins and traits, and ultimately build complex organisms like humans, octopuses, and worms.
