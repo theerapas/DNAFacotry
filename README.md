@@ -133,7 +133,7 @@ Every step of life creation—whether it’s combining gene sequences, assemblin
 
 ## 🛠 Tech Stack
 
-- **Java 17+**
+- **Java 23**
 - **JavaFX**
 - **Scene Builder**
 - **Eclipse** as IDE
